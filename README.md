@@ -1,6 +1,14 @@
 # Minibank
 A very simple rest api service to teach about cloud computing, containerization and distributed systems.
 
+## Quick start
+To build and deploy this service, run:
+```
+cd week1
+make
+make run-images
+```
+This starts the database and minibank container instances, with minibank listening on port 80.
 
 ## Description 
 

@@ -14,8 +14,4 @@ func InitDB(dataSourceName string) {
 	if err != nil {
 		log.Panic(err)
 	}
-	err = Database.Ping()
-	if err != nil {
-		log.Panic(err)
-	}
 }
