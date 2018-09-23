@@ -5,7 +5,7 @@ mysql: minibankdb
 mariadb: minibankdb
 
 bin/minibank: $(shell find src/minibank -name *.go)
-	docker run --rm -v `pwd`:/go -w /go/src/minibank golang:1.9-alpine sh -c 'go get && go build -v'
+	docker run --rm -v `pwd`:/go -w /go/src/minibank golang:1.9-alpine sh -c 'apk add git && go get && go build -v'
 	docker build -t minibank .
 
 minibankdb:
