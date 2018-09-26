@@ -49,7 +49,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 					hashedpw,
 					time.Now().UnixNano()/1000000)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					w.WriteHeader(http.StatusServiceUnavailabe)
 					w.Write([]byte("Unable to register new account"))
 				} else {
 					last_id, _ := res.LastInsertId()
