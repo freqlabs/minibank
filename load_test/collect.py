@@ -31,7 +31,7 @@ def wait_for_replicas(replicas, deployment='minibank'):
     ready_replicas = json.loads(command_out)['status']['readyReplicas']
     if ready_replicas != replicas:
         msg = "Expected Replicas: {}, Ready Replicas: {}".format(replicas, ready_replicas)
-        print msg
+        print(msg)
         raise ReplicaCountMismatchException(msg)
 
 
@@ -62,12 +62,12 @@ def main(endpoint, replica_counts, tag, payload):
     for replicas in replica_counts:
         update_replica_count(replicas)
         wait_for_replicas(replicas)
-        print 'Collecting statistics for cluster with {} replicas'.format(replicas)
+        print('Collecting statistics for cluster with {} replicas'.format(replicas))
         results = []
         levels = get_levels()
         for con_level, req_count in levels.items():
-            print 'Processing Concurrency = {}'.format(con_level)
-            command_out = execute_ab(con_level, req_count, ip_address, payload, endpoint)
+            print('Processing Concurrency = {}'.format(con_level))
+            command_out = execute_ab(con_level, req_count, ip_address, payload, endpoint).decode('utf-8')
             level_results = {'con_level': con_level}
             for line in command_out.split('\n'):
                 if len(level_results) == 1:
@@ -120,7 +120,7 @@ def execute_ab(con_level, req_count, ip_address, payload, endpoint):
         command_out = subprocess.check_output(command)
         return command_out
     except CalledProcessError:
-        print "AB exited with error"
+        print("AB exited with error")
         raise
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ push-images: minibank mariadb
 
 .PHONY: prepare-venv
 prepare-venv:
-	virtualenv venv
+	python3 -m venv venv
 	venv/bin/pip install -r load_test/requirements.txt
 
 .PHONE: load-test
