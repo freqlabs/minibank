@@ -6,3 +6,4 @@ src/*
 results*
 cookies.txt
 venv
+token.json

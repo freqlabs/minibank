@@ -28,7 +28,7 @@ def get_ip_address(service='minibank'):
 def wait_for_replicas(replicas, deployment='minibank'):
     command = ['kubectl', 'get', 'deployments', deployment, '-o', 'json']
     command_out = subprocess.check_output(command)
-    ready_replicas = json.loads(command_out)['status']['readyReplicas']
+    ready_replicas = json.loads(command_out)['status'].get('readyReplicas', 0)
     if ready_replicas != replicas:
         msg = "Expected Replicas: {}, Ready Replicas: {}".format(replicas, ready_replicas)
         print(msg)

@@ -54,24 +54,26 @@ func getSessionLookup() func(string) (string, bool) {
 	if models.CassandraEnabled {
 		return func(session string) (string, bool) {
 			var username string
-			// UPDATE REQUIRED
-			// Add logic to get a list of sessions from cassandra
+			row := models.CassandraSession.Query(`SELECT username FROM minibank.sessions WHERE session = ?`, session)
+			if err := row.Scan(&username); err != nil {
+				return "", false
+			}
 			return username, true
 		}
 	} else {
 		return func(session string) (string, bool) {
 			var username string
 			row := models.Database.QueryRow("SELECT username FROM sessions WHERE session = ?", session)
-			switch err := row.Scan(&username); err {
-			case sql.ErrNoRows:
-				return "", false
-			case nil:
-				return username, true
-			default:
+			if err := row.Scan(&username); err != nil {
 				return "", false
 			}
+			return username, true
 		}
 	}
+}
+
+func timestamp() uint64 {
+	return uint64(time.Now().UnixNano() / 1000000)
 }
 
 func getSessionWriter() func(uuid.UUID, string) {
@@ -93,15 +95,23 @@ func getSessionWriter() func(uuid.UUID, string) {
 	}
 	if models.CassandraEnabled {
 		return func(session uuid.UUID, username string) {
-			// UPDATE REQUIRED
-			// Add logic to insert session data into cassandra
+			err := models.CassandraSession.Query(
+				`INSERT INTO minibank.sessions (session, username, expiration) VALUES (?, ?, ?)`,
+				session.String(), username, timestamp() + sessionDuration,
+			).Exec()
+			if err != nil {
+				log.Print("failed to insert")
+				log.Fatal(err)
+			} else {
+				log.Print("insert ok")
+			}
 		}
 	} else {
 		return func(session uuid.UUID, username string) {
-			models.Database.Exec("INSERT INTO sessions(session, username, expiration) VALUES (?, ?, ?)",
-				session.String(),
-				username,
-				uint64(time.Now().UnixNano()/1000000)+sessionDuration)
+			models.Database.Exec(
+				"INSERT INTO sessions(session, username, expiration) VALUES (?, ?, ?)",
+				session.String(), username, timestamp() + sessionDuration,
+			)
 		}
 	}
 }
@@ -114,16 +124,20 @@ func getSessionListLookup() func(string) UserSessions {
 	}
 	if models.CassandraEnabled {
 		return func(username string) UserSessions {
-			sessionList := []string{}
-			// UPDATE REQUIRED
-			// Add logic to get a list of sessions for the user from cassadra and return an UserSessions object
+			rows := models.CassandraSession.Query(`SELECT session FROM minibank.sessions WHERE username = ?`, username).Iter()
+			sessionList := make([]string, 0, rows.NumRows())
+			var session string
+			for rows.Scan(&session) {
+				sessionList = append(sessionList, session)
+			}
+			if err := rows.Close(); err != nil {
+				log.Fatal(err)
+			}
 			return UserSessions{sessionList}
 		}
-
 	} else {
 		return func(username string) UserSessions {
-			rows, err := models.Database.Query("SELECT session FROM sessions WHERE username =?", username)
-			//defer rows.Close()
+			rows, err := models.Database.Query("SELECT session FROM sessions WHERE username = ?", username)
 			sessionList := []string{}
 			if err == nil {
 				var session string
@@ -134,6 +148,7 @@ func getSessionListLookup() func(string) UserSessions {
 					}
 					// TODO: handle err case
 				}
+				rows.Close()
 			}
 			return UserSessions{sessionList}
 		}
@@ -261,10 +276,12 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusInternalServerError)
 					w.Write([]byte("Unable to process request."))
 				}
-				res, err := models.Database.Exec("INSERT INTO account(username, password, timestamp) VALUES (?, ?, ?)",
+				res, err := models.Database.Exec(
+					"INSERT INTO account(username, password, timestamp) VALUES (?, ?, ?)",
 					registration.Username,
 					hashedpw,
-					time.Now().UnixNano()/1000000)
+					timestamp(),
+				)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					w.Write([]byte("Unable to register new account"))

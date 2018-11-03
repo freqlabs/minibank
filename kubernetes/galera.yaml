@@ -26,7 +26,7 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: gcr.io/<YOUR_PROJECT_ID>/mariadb:latest
+      - image: gcr.io/cs385fa18/mariadb:latest
         name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD

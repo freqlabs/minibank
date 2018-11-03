@@ -26,7 +26,7 @@ func InitDB(dbDone_chan chan<- bool) {
 	if err != nil {
 		log.Panic(err)
 	}
-	for true {
+	for {
 		err = Database.Ping()
 		if err != nil {
 			log.Print(err)
@@ -54,6 +54,11 @@ func InitCassandra() error {
 	cluster.Authenticator = pass
 	cluster.Consistency = gocql.One
 	sess, err := cluster.CreateSession()
+	for err != nil {
+		time.Sleep(time.Second)
+		sess, err = cluster.CreateSession()
+	}
+	log.Print("Got connected to Cassandra")
 	CassandraSession = sess
 
 	kstmt := "CREATE KEYSPACE IF NOT EXISTS minibank WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' : 3}"
@@ -66,6 +71,11 @@ func InitCassandra() error {
 	err = CassandraSession.Query(tstmt).Exec()
 	if err != nil {
 		log.Fatal("Unable to create sessions table in minibank keyspace")
+	}
+	istmt := "CREATE INDEX IF NOT EXISTS ON minibank.sessions(username);"
+	err = CassandraSession.Query(istmt).Exec()
+	if err != nil {
+		log.Fatal("Unable to create sessions index on username in minibank keyspace")
 	}
 	cluster.Keyspace = "minibank"
 	return err
